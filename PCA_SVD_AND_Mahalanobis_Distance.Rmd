@@ -1,0 +1,237 @@
+---
+title: "PCA, SVD and Mahalanobis distance"
+author: "Christopher Gillies"
+date: "11/16/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Multivariate normal distribution
+
+\begin{equation}
+f(x)=\frac{1}{\sqrt{(2\pi)^n|\boldsymbol\Sigma|}}
+\exp\left(-\frac{1}{2}({x}-{\mu})^T{\boldsymbol\Sigma}^{-1}({x}-{\mu})
+\right)
+\end{equation}
+
+If we assume the data are zero-centered then:
+\begin{equation}
+f(x)=\frac{1}{\sqrt{(2\pi)^n|\boldsymbol\Sigma|}}
+\exp\left(-\frac{1}{2}({x})^T{\boldsymbol\Sigma}^{-1}({x})
+\right)
+\end{equation}
+
+## Generate a random sample
+
+```{r}
+require(MASS)
+require(ggplot2)
+S = matrix(c(1,0.75,0.75,2),ncol=2)
+x = mvrnorm(n = 1000, mu=c(0,0), Sigma=S)
+
+ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4))
+```
+
+## Perform PCA
+```{r }
+S.sample = cov(x)
+
+e.decomp = eigen(S.sample)
+
+e.decomp$vectors %*% diag(e.decomp$values) %*% t(e.decomp$vectors)
+
+x.proj = x %*% e.decomp$vectors
+ggplot(data.frame()) + geom_point(aes(x=x.proj[,1],y=x.proj[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4))
+
+e.decomp$values
+var(x.proj[,1])
+var(x.proj[,2])
+```
+
+Notice that the variance of the projected data matches the eigenvalues of the covariance matrix. The projection of x onto its principal components simply rotates the data.
+
+```{r }
+
+svd.sample.cov = svd(S.sample)
+
+
+x.center = scale(x,scale = FALSE)
+
+svd.x = svd(x.center)
+
+
+x.proj.2 = x.center %*% svd.x$v
+x.proj.3 = x.center %*% svd.sample.cov$v
+
+plot(x.proj.2[,1],x.proj.3[,1])
+plot(x.proj.2[,2],x.proj.3[,2])
+
+svd.x$d^2 / (1000 - 1)
+svd.sample.cov$d
+```
+
+The same eigenvectors and eigenvalues are computed from the matrix x.center and the covariance matrix. The singlar values of x and the cov(x) are related as follows:
+
+\begin{equation}
+\lambda_i = \frac{\sigma_i^2}{n-1} 
+\end{equation}
+
+\begin{equation}
+\text{COV} \left [ X \right ] = \frac{1}{n-1}X^TX 
+\end{equation}
+
+\begin{equation}
+X = U \Sigma V^T 
+\end{equation}
+
+\begin{equation}
+X^TX = (U \Sigma V^T)^T (U \Sigma V^T)
+\end{equation}
+
+\begin{equation}
+X^TX = V \Sigma U^TU \Sigma V^T
+\end{equation}
+
+\begin{equation}
+X^TX = V \Sigma \Sigma V^T = V \Sigma^2 V^T
+\end{equation}
+
+\begin{equation}
+\frac{1}{n-1}X^TX = \frac{1}{n-1} V \Sigma^2 V^T \rightarrow \frac{1}{n-1} \Sigma^2 = \Lambda
+\end{equation}
+
+where $\Lambda$ is the diagonal matrix of eigenvalues of $\text{COV} \left [ X \right ]$.
+
+This is the same formula as above for the relationship between the singular values of X and the eigenvalues of its covariance matrix.
+
+## What happens if we scale X before running PCA?
+
+```{r }
+x.scaled = scale(x)
+
+cov.scaled.x = cov(x.scaled)
+cov.scaled.x
+S.sample
+
+ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("Before scaling")
+ggplot(data.frame()) + geom_point(aes(x=x.scaled[,1],y=x.scaled[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("After scaling")
+```
+
+```{r }
+scaled.svd = svd(cov.scaled.x)
+
+x.scaled.proj = x.scaled %*% scaled.svd$v 
+ggplot(data.frame()) + geom_point(aes(x=x.scaled.proj[,1],y=x.scaled.proj[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("After projection scaled x") 
+
+svd.sample.cov$d
+scaled.svd$d
+```
+
+## Data reconstruction
+
+```{r }
+
+x.projection = svd.sample.cov$v %*% t(x.center)
+x.reconstruction = t(svd.sample.cov$v %*% x.projection)
+x.reconstruction.partial = t(svd.sample.cov$v %*% rbind(x.projection[1,], 0))
+
+cor(x.reconstruction[,1],x.center[,1])
+cor(x.reconstruction[,2],x.center[,2])
+cor(x.reconstruction[,1],x.reconstruction.partial[,1])
+cor(x.reconstruction[,2],x.reconstruction.partial[,2])
+
+```
+
+Notince that the reconstruction works perfectly, and the partial reconstruction works fairly well.
+
+## Whitening transform
+```{r }
+x.proj.white = x.center %*% svd.sample.cov$v %*% solve(diag(sqrt(svd.sample.cov$d)))
+var(x.proj.white[,1])
+var(x.proj.white[,2])
+ggplot(data.frame()) + geom_point(aes(x=x.proj.white[,1],y=x.proj.white[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("Whitening Transfrom")
+
+w_sqrt = svd.sample.cov$v %*% diag(sqrt(svd.sample.cov$d)) %*% t(svd.sample.cov$v)
+w_inv_sqrt = solve(w_sqrt)
+w_inv_sqrt.2 = t(svd.sample.cov$v) %*% solve(diag(sqrt(svd.sample.cov$d))) %*% svd.sample.cov$v
+x.proj.white.2= x.center %*% w_inv_sqrt.2
+ggplot(data.frame()) + geom_point(aes(x=x.proj.white.2[,1],y=x.proj.white.2[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("Whitening Transfrom 2")
+
+
+cov(x.proj.white.2)
+cov(x.proj.white)
+
+```
+
+
+The above are two different whitening transforms.
+Please note that:
+\begin{equation}
+\text{COV}[X] = V \Lambda V^T
+\end{equation}
+In a diagonal matrix $\Lambda$ we can take the square roots by just taking the square root of the diagonal elements
+\begin{equation}
+\text{COV}[X] = (V \Lambda^{1/2} V^T)^2 = V \Lambda^{1/2} (V^T V) \Lambda^{1/2} V^T = V \Lambda V^T
+\end{equation}
+Since, $V^T V = I$. That is $V^T = V^{-1}$.
+\begin{equation}
+\text{COV}[X]^{1/2} = V \Lambda^{1/2} V^T 
+\end{equation}
+
+
+Now $(ABC)^-1 = C^{-1}B^{-1}A^{-1}$. Therefore
+\begin{equation}
+\text{COV}[X]^{-1/2} = (V \Lambda^{1/2} V^T )^{-1} = V^{-1} \Lambda^{-1/2} (V^{-1})^-1 = V^{T} \Lambda^{-1/2} V
+\end{equation}
+Since $V^T = V^{-1}$.
+
+# Mahalanobis distance$^2$
+The Mahalanobis of a centered vector from the origin is:
+\begin{equation}
+D_{M}(x)^2 = x^T S^{-1} x
+\end{equation}
+where $S$ is the covariance matrix of the vector $x$.
+
+```{r }
+t(x.center[1,]) %*% solve(S.sample) %*% x.center[1,]
+sum(x.proj.white[1,]^2)
+sum(x.proj.white.2[1,]^2)
+
+x.1.proj.scaled = x.center[1,] %*% svd.sample.cov$v %*% solve(diag(sqrt(svd.sample.cov$d)))
+sum(x.1.proj.scaled^2)
+```
+
+Mahalanobis distance$^2$ is the equal to the $\lVert x \rVert^2$ in the Whitened space.
+
+The norm of a vector
+\begin{equation}
+\lVert x \rVert^2 = \sum{x_i^2} = x^Tx
+\end{equation}
+\begin{equation}
+(x^T)^T = x
+\end{equation}
+
+
+
+
+\begin{equation}
+D_{M}(x)^2 = x^T \text{COV}[X]^{-1} x
+\end{equation}
+
+\begin{equation}
+\text{COV}[X]^{-1} = (V \Lambda V^T )^{-1} = V^T \Lambda^{-1} V
+\end{equation}
+
+The Mahalanobis distance$^2$ can be written as 
+\begin{equation}
+D_{M}(x)^2 = x^T V^T \Lambda^{-1} V x =  x^T V^T \Lambda^{-1/2}  \Lambda^{-1/2} V x = (x^T V^T \Lambda^{-1/2})  (\Lambda^{-1/2} V x) = (\Lambda^{-1/2} V x)^T (\Lambda^{-1/2} V x)
+\end{equation}
+\begin{equation}
+= (\Lambda^{-1/2} V x)^T (\Lambda^{-1/2} V x) = \lVert \Lambda^{-1/2} V x \rVert^2 = \lVert x^T V^T \Lambda^{-1/2} \rVert^2 = D_{M}(x)^2 
+\end{equation}
+The final equality $\lVert x^T V^T \Lambda^{-1/2} \rVert^2$ shows that the $D_{M}(x)^2$ is the same as projecting the $x$ onto its principal components, then scaling each axis by the square root of its eigenvalue (if the eigenvalue is the variance then the sqrt(eigenvalue) is like the standard deviation) and finally taking the norm of the scaled projected x. A eigenvalue is the variance of the data projected onto its corresponding eigenvector, so to scale it you divide by the standard deviation.
+
+# What about PCA and SVD in the case where there are more variables than observations?
