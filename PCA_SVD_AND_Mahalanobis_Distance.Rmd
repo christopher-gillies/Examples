@@ -73,7 +73,7 @@ svd.x$d^2 / (1000 - 1)
 svd.sample.cov$d
 ```
 
-The same eigenvectors and eigenvalues are computed from the matrix x.center and the covariance matrix. The singlar values of x and the cov(x) are related as follows:
+The same eigenvectors and eigenvalues are computed from the matrix x.center and the covariance matrix. The singlar values $\sigma_i$ of x and the eigenvalues $\lambda_i$ of cov(x) are related as follows:
 
 \begin{equation}
 \lambda_i = \frac{\sigma_i^2}{n-1} 
@@ -235,3 +235,93 @@ D_{M}(x)^2 = x^T V^T \Lambda^{-1} V x =  x^T V^T \Lambda^{-1/2}  \Lambda^{-1/2} 
 The final equality $\lVert x^T V^T \Lambda^{-1/2} \rVert^2$ shows that the $D_{M}(x)^2$ is the same as projecting the $x$ onto its principal components, then scaling each axis by the square root of its eigenvalue (if the eigenvalue is the variance then the sqrt(eigenvalue) is like the standard deviation) and finally taking the norm of the scaled projected x. A eigenvalue is the variance of the data projected onto its corresponding eigenvector, so to scale it you divide by the standard deviation.
 
 # What about PCA and SVD in the case where there are more variables than observations?
+
+Generate random samples. Assume we have $n=100$ subjects and $m=200$ snps.
+```{r }
+n = 100
+m = 50000
+z = rbinom(n,size = 2, prob = 0.5)
+X = matrix(rep(0,n * m),ncol=n)
+snp_afs_0 = runif(m,0.01,0.5)
+snp_afs_1 = runif(m,0.25,0.75)
+snp_afs_2 = c(snp_afs_0[1:(m/2)],snp_afs_1[(m/2 + 1):m])
+for(i in 1:n) {
+  x_i = NULL
+  if(z[i] == 0) {
+    x_i = rbinom(m,size=2,prob=snp_afs_0)
+  } else if(z[i] == 1) {
+    x_i = rbinom(m,size=2,prob=snp_afs_1)
+  } else {
+    x_i = rbinom(m,size=2,prob=snp_afs_2)
+  }
+  X[,i] = x_i
+}
+```
+
+Standardize by subtracting off the row means and dividing by the standard deviation. Also compute covariance matrix.
+```{r }
+X_std = t(scale(t(X)))
+ind_cov = cov(X_std)
+ind_cor_x = cor(X)
+
+#approx covariance matrix
+Xt_X = t(X_std) %*% X_std * 1/(n-1)
+
+dim(ind_cov)
+dim(Xt_X)
+
+sign(Xt_X[1:10,1:10]) == sign(ind_cov[1:10,1:10])
+Xt_X[1:10,1:10] / ind_cov[1:10,1:10]
+```
+
+Now let us compare the eigenvalues of each
+```{r }
+eigen.XT_X = eigen(Xt_X)
+eigen.ind_cov = eigen(ind_cov)
+eigen.ind_cor = eigen(cor(X_std))
+eigen.ind_cor_x = eigen(ind_cor_x)
+svd.X = svd(X_std)
+
+color = function(x) {
+  a_func = function(a) {
+    if(a == 0) {
+      return("black")
+    } else if(a == 1) {
+      return("red")
+    } else {
+      return("blue")
+    }
+  }
+  sapply(x,FUN=a_func)
+}
+
+(svd.X$d^2 / (n - 1))[1:10]
+eigen.XT_X$values[1:10]
+plot(svd.X$d^2 / (n - 1),eigen.XT_X$values,main="singluar values^2 / (n-1) = eigenvalues")
+plot(svd.X$v[,1],svd.X$v[,2],col=color(z))
+plot(eigen.XT_X$vectors[,1],eigen.XT_X$vectors[,2],col=color(z))
+plot(eigen.ind_cov$vectors[,1],eigen.ind_cov$vectors[,2],col=color(z))
+plot(eigen.ind_cor$vectors[,1],eigen.ind_cor$vectors[,2],col=color(z))
+plot(eigen.ind_cor_x$vectors[,1],eigen.ind_cor_x$vectors[,2],col=color(z))
+
+plot(eigen.ind_cov$vectors[,1],eigen.XT_X$vectors[,1])
+plot(eigen.ind_cov$vectors[,2],eigen.XT_X$vectors[,2])
+plot(eigen.ind_cov$vectors[,3],eigen.XT_X$vectors[,3])
+
+
+plot(eigen.ind_cor$vectors[,1],eigen.XT_X$vectors[,1])
+plot(eigen.ind_cor$vectors[,2],eigen.XT_X$vectors[,2])
+plot(eigen.ind_cor$vectors[,3],eigen.XT_X$vectors[,3])
+
+plot(eigen.ind_cov$values,eigen.XT_X$values)
+plot(eigen.ind_cov$values,eigen.ind_cor$values)
+plot(eigen.ind_cor$values,eigen.ind_cor_x$values)
+
+plot(eigen.ind_cor_x$vectors[,1],eigen.XT_X$vectors[,1])
+plot(eigen.ind_cor_x$vectors[,2],eigen.XT_X$vectors[,2])
+
+
+```
+The eigenvalues from svd match those from the eigenvalues from the matrix Xt_X
+
+Now let us see how 
