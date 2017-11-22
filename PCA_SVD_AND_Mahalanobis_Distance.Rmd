@@ -7,6 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+require(MASS)
+require(ggplot2)
 ```
 
 # Multivariate normal distribution
@@ -24,18 +26,29 @@ f(x)=\frac{1}{\sqrt{(2\pi)^n|\boldsymbol\Sigma|}}
 \right)
 \end{equation}
 
+#where $x$ is an $m$-dimensional vector.
+
 ## Generate a random sample
 
 ```{r}
-require(MASS)
-require(ggplot2)
-S = matrix(c(1,0.75,0.75,2),ncol=2)
+
+S = matrix(c(1,0.4,0.4,2),ncol=2)
 x = mvrnorm(n = 1000, mu=c(0,0), Sigma=S)
 
-ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4))
+ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-5,5))  + scale_y_continuous(limits=c(-5,5)) +
+  ggtitle("Random sample from a  bivariate normal distribution") + xlab("x1") + ylab("x2")
 ```
 
 ## Perform PCA
+In principal component analysis, we compute the covariance of the features we are studying, and then compute the eigenvectors of this matrix.
+Let a matrix $X \in \mathbb{R}^{n \times m}$ be a matrix, where we have $n$ observations for $m$ features.
+
+\begin{equation}
+X_{c} = X - {\mu_j}
+\end{equation}
+
+$X_c$ is the centered matrix of $X$, where we subtract the mean ($\mu_j$) of each column (feature) from the data and $j \in \{1,..m\}$.
+ 
 ```{r }
 S.sample = cov(x)
 
@@ -44,14 +57,14 @@ e.decomp = eigen(S.sample)
 e.decomp$vectors %*% diag(e.decomp$values) %*% t(e.decomp$vectors)
 
 x.proj = x %*% e.decomp$vectors
-ggplot(data.frame()) + geom_point(aes(x=x.proj[,1],y=x.proj[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4))
+ggplot(data.frame()) + geom_point(aes(x=x.proj[,1],y=x.proj[,2])) + scale_x_continuous(limits=c(-5,5))  + scale_y_continuous(limits=c(-5,5))
 
 e.decomp$values
 var(x.proj[,1])
 var(x.proj[,2])
 ```
 
-Notice that the variance of the projected data matches the eigenvalues of the covariance matrix. The projection of x onto its principal components simply rotates the data.
+Notice that the variance of the projected data matches the eigenvalues of the covariance matrix of $X$. The projection of x onto its principal components simply rotates the data.
 
 ```{r }
 
@@ -73,7 +86,7 @@ svd.x$d^2 / (1000 - 1)
 svd.sample.cov$d
 ```
 
-The same eigenvectors and eigenvalues are computed from the matrix x.center and the covariance matrix. The singlar values $\sigma_i$ of x and the eigenvalues $\lambda_i$ of cov(x) are related as follows:
+The same eigenvectors and eigenvalues are computed from the matrix x.center and the covariance matrix. The singlar values $\sigma_i$ of x and the eigenvalues $\lambda_i$ of COV$(X)$ are related as follows:
 
 \begin{equation}
 \lambda_i = \frac{\sigma_i^2}{n-1} 
@@ -103,7 +116,7 @@ X^TX = V \Sigma \Sigma V^T = V \Sigma^2 V^T
 \frac{1}{n-1}X^TX = \frac{1}{n-1} V \Sigma^2 V^T \rightarrow \frac{1}{n-1} \Sigma^2 = \Lambda
 \end{equation}
 
-where $\Lambda$ is the diagonal matrix of eigenvalues of $\text{COV} \left [ X \right ]$.
+where $\Lambda$ is the diagonal matrix of eigenvalues of $\text{COV} \left [ X \right ]$. Also note that $V$ is a unitary matrix.
 
 This is the same formula as above for the relationship between the singular values of X and the eigenvalues of its covariance matrix.
 
@@ -116,19 +129,51 @@ cov.scaled.x = cov(x.scaled)
 cov.scaled.x
 S.sample
 
-ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("Before scaling")
-ggplot(data.frame()) + geom_point(aes(x=x.scaled[,1],y=x.scaled[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("After scaling")
+ggplot(data.frame()) + geom_point(aes(x=x[,1],y=x[,2])) + scale_x_continuous(limits=c(-5,5))  + scale_y_continuous(limits=c(-5,5)) + ggtitle("Before scaling")
+ggplot(data.frame()) + geom_point(aes(x=x.scaled[,1],y=x.scaled[,2])) + scale_x_continuous(limits=c(-5,5))  + scale_y_continuous(limits=c(-5,5)) + ggtitle("After scaling")
 ```
 
 ```{r }
+#this is equivalent to the correlation matrix
 scaled.svd = svd(cov.scaled.x)
 
 x.scaled.proj = x.scaled %*% scaled.svd$v 
-ggplot(data.frame()) + geom_point(aes(x=x.scaled.proj[,1],y=x.scaled.proj[,2])) + scale_x_continuous(limits=c(-4,4))  + scale_y_continuous(limits=c(-4,4)) + ggtitle("After projection scaled x") 
+ggplot(data.frame()) + geom_point(aes(x=x.scaled.proj[,1],y=x.scaled.proj[,2])) + scale_x_continuous(limits=c(-5,5))  + scale_y_continuous(limits=c(-5,5)) + ggtitle("After projection scaled x") 
 
 svd.sample.cov$d
 scaled.svd$d
 ```
+
+It is interesting to note that the angle between the principal axes changes.
+
+\begin{equation}
+\cos(\theta) = \frac{v \cdot w}{\lVert v \rVert \lVert x \rVert}
+\end{equation}
+
+However, we know that the eigenvectors have already been normalized so we can rewrite the equation as:
+
+\begin{equation}
+\cos(\theta) = v \cdot w
+\end{equation}
+
+\begin{equation}
+ \theta = \cos^{-1}(v \cdot w)
+\end{equation}
+
+```{r }
+angle = function(v,w) {
+  v.norm = v/sqrt(sum(v^2))
+  w.norm = w / sqrt(sum(w^2))
+  radians = acos(v.norm %*% w.norm)
+  radians * 180 / pi
+}
+angle(c(1,0),-scaled.svd$v[,1])
+angle(c(1,0),-scaled.svd$v[,2])
+angle(c(1,0),svd.sample.cov$v[,1])
+angle(c(1,0),-svd.sample.cov$v[,2])
+```
+
+So the angle between the principal axes changes significantly. In fact for a 2 by 2 matrix the eigenvectors of the correlation matrix are always the same.
 
 ## Data reconstruction
 
@@ -239,7 +284,7 @@ The final equality $\lVert x^T V^T \Lambda^{-1/2} \rVert^2$ shows that the $D_{M
 Generate random samples. Assume we have $n=100$ subjects and $m=200$ snps.
 ```{r }
 n = 100
-m = 50000
+m = 1000
 z = rbinom(n,size = 2, prob = 0.5)
 X = matrix(rep(0,n * m),ncol=n)
 snp_afs_0 = runif(m,0.01,0.5)
@@ -325,3 +370,172 @@ plot(eigen.ind_cor_x$vectors[,2],eigen.XT_X$vectors[,2])
 The eigenvalues from svd match those from the eigenvalues from the matrix Xt_X
 
 Now let us see how 
+
+
+
+Higher varying genes have higher weights assigned to them
+```{r }
+plot((svd.X$u[,1])^2,apply(X,MARGIN=1,FUN=var))
+cor((svd.X$u[,1])^2,apply(X,MARGIN=1,FUN=var))
+
+best_snps_for_comp_1 = sort(svd.X$u[,1],decreasing=T,index.return=T)$ix
+best_snps_for_comp_2 = sort(svd.X$u[,2],decreasing=T,index.return=T)$ix
+
+genes_ranked_by_var = sort(apply(X,MARGIN=1,FUN=var),index.return=T,decreasing=T)
+ggplot(data.frame()) + geom_jitter(aes(x=X[best_snps_for_comp_1[1],],y=X[best_snps_for_comp_2[1],],color=color(z)),width = 0.25,height=0.25)
+ggplot(data.frame()) + geom_jitter(aes(x=X[best_snps_for_comp_2[1],],y=X[best_snps_for_comp_2[2],],color=color(z)),width = 0.25,height=0.25)
+
+ggplot(data.frame()) + geom_density(aes(x=X[best_snps_for_comp_1[1],],color=color(z)))
+ggplot(data.frame()) + geom_density(aes(x=X[best_snps_for_comp_1[2],],color=color(z)))
+ggplot(data.frame()) + geom_density(aes(x=X[best_snps_for_comp_2[1],],color=color(z)))
+ggplot(data.frame()) + geom_density(aes(x=X[best_snps_for_comp_2[2],],color=color(z)))
+```
+
+# How does centering affect the calculation of eigenvectors?
+```{r }
+X_row_center = X - apply(X,MARGIN=1,FUN=mean)
+X_col_center = X - apply(X,MARGIN=2,FUN=mean)
+
+X_row_center_svd = svd(X_row_center)
+X_col_center_svd = svd(X_col_center)
+```
+
+\begin{equation}
+X = U \Sigma V^{T}
+\end{equation}
+
+\begin{equation}
+U^{T} X = \Sigma V^{T} \rightarrow X^{T}U = V \Sigma^{T} \rightarrow X^{T}U = V \Sigma
+\end{equation}
+
+In this case, the columns of $U$ are the eigenvectors of $XX^T$. $XX^T = U\Sigma^2U^T$ which is proportional to the covariance matrix between SNPs. In this case, $V \Sigma$ contains the principal component scores of, which are the subject's projected into the space of $U$.
+```{r }
+X_XT_row_center = X_row_center %*% t(X_row_center)
+X_XT_row_center_svd = svd(X_XT_row_center)
+
+X_XT_row_center_svd$v[1:10,1:10]
+X_XT_row_center_svd$u[1:10,1:10]
+```
+
+
+```{r }
+X_XT_row_center_svd$u[1:10,1:10]
+X_row_center_svd$u[1:10,1:10]
+```
+From the above, we can see that the eigenvectors match.
+
+Now we can see that the projection and the PC scores match.
+```{r }
+X_row_center_proj = t(X_row_center) %*% X_row_center_svd$u
+X_row_center_proj_2 = X_row_center_svd$v %*% diag(X_row_center_svd$d)
+
+X_row_center_proj[1:10,1:10]
+X_row_center_proj_2[1:10,1:10]
+
+ggplot(data.frame()) + geom_point(aes(x=X_row_center_proj[,1],X_row_center_proj[,2],color=factor(z))) + ggtitle("Projection of X onto the eigenvectors of the covariance matrix of the snps")
+```
+
+From this we can see that the columns of $U$ specify the weights of each SNP for each eigenvector.
+
+\begin{equation}
+X = U \Sigma V^{T}
+\end{equation}
+
+\begin{equation}
+X V = U \Sigma
+\end{equation}
+
+In this case, the columns of $V$ are the eigenvectors of $X^TX$. In this case, we are projecting the SNPs onto the eigenvectors of the covariance matrix of the individuals. So $U \Sigma$ contain the coordinates of each gene in the space of the principal components of $V$.
+
+```{r }
+X_col_center_proj = X_col_center %*% X_col_center_svd$v
+X_col_center_proj_2 = X_col_center_svd$u %*% diag(X_col_center_svd$d)
+
+X_col_center_proj[1:10,1:10]
+X_col_center_proj_2[1:10,1:10]
+
+plot(X_col_center_proj[,1],X_col_center_proj[,2])
+```
+
+# Conclusion on how to do PCA when number of samples are less than the number of features.
+Let $X$ be a matrix of $m$ rows of features and $n$ columns of samples. Center and/or standardize each colum, then compute the SVD of $X = U \Sigma V^T$. $U$ are the eigenvectors of $XX^T$ (proportional to the m by m covariance matrix of features). Each column of $U$ is an eigenvector of the covariance matrix. $U^T X =  \Sigma V^T \rightarrow X^TU = V \Sigma$. $U_{i,j}$ is the weight of feature $i$ in eigenvector $j$. Column $j$ of $X^T U$ or $V \Sigma$ are the scores of all individuals along the $j$ principal component.
+
+So ultimately it comes down to are we interested in seeing the relationship between features or between individuals.
+
+# How do different covariance matrices affect the calculation of different Mahalanobis distances?
+
+
+```{r }
+cov.mat = matrix(
+  c(1,   -0.5,
+    -0.5, 1),ncol=2)
+
+eigen.decomp = eigen(cov.mat)
+
+vals = c(-2,1)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+#distance from origin in white transformed space
+vals.proj.scaled = vals %*% eigen.decomp$vectors / sqrt(eigen.decomp$values)
+sqrt(sum(vals.proj.scaled^2))
+angle(c(1,0),t(vals.proj.scaled))
+sum(vals.proj.scaled)
+
+vals = c(2,2)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+
+vals = c(-1,3)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+#distance from origin in white transformed space
+vals.proj.scaled = vals %*% eigen.decomp$vectors / sqrt(eigen.decomp$values)
+sqrt(sum(vals.proj.scaled^2))
+```
+
+```{r }
+cov.mat = matrix(
+  c(4,   4*0.25,
+    4*0.25, 4),ncol=2)
+
+vals = c(4,-4)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+cov.mat = matrix(
+  c(1,   0.25,
+    0.25, 1),ncol=2)
+
+vals = c(2,-2)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+cov.mat = matrix(
+  c(1,   -0.25,
+    -0.25, 1),ncol=2)
+
+vals = c(2,-2)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+cov.mat = matrix(
+  c(1,   0,
+    0, 1),ncol=2)
+
+vals = c(3,3)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+
+cov.mat = matrix(
+  c(1,   0.9,
+    0.9, 1),ncol=2)
+
+vals = c(3,3)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+```
+
+```{r }
+cov.mat = matrix(
+  c(1,   0.5, -0.75,
+    0.5, 1,    0.5,
+   -0.75, 0.5,  1),ncol=3)
+
+vals = c(-3,0,3)
+sqrt(vals %*% solve(cov.mat) %*% vals)
+```

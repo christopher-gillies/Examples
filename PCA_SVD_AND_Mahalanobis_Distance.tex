@@ -1,0 +1,1023 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={PCA, SVD and Mahalanobis distance},
+            pdfauthor={Christopher Gillies},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{{#1}}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\ImportTok}[1]{{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{{#1}}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{{#1}}}}
+\newcommand{\BuiltInTok}[1]{{#1}}
+\newcommand{\ExtensionTok}[1]{{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{{#1}}}
+\newcommand{\RegionMarkerTok}[1]{{#1}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{{#1}}}}
+\newcommand{\NormalTok}[1]{{#1}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{PCA, SVD and Mahalanobis distance}
+  \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+  \author{Christopher Gillies}
+  \preauthor{\centering\large\emph}
+  \postauthor{\par}
+  \predate{\centering\large\emph}
+  \postdate{\par}
+  \date{11/16/2017}
+
+
+\begin{document}
+\maketitle
+
+\section{Multivariate normal
+distribution}\label{multivariate-normal-distribution}
+
+\begin{equation}
+f(x)=\frac{1}{\sqrt{(2\pi)^n|\boldsymbol\Sigma|}}
+\exp\left(-\frac{1}{2}({x}-{\mu})^T{\boldsymbol\Sigma}^{-1}({x}-{\mu})
+\right)
+\end{equation}
+
+If we assume the data are zero-centered then:
+
+\begin{equation}
+f(x)=\frac{1}{\sqrt{(2\pi)^n|\boldsymbol\Sigma|}}
+\exp\left(-\frac{1}{2}({x})^T{\boldsymbol\Sigma}^{-1}({x})
+\right)
+\end{equation}
+
+\section{\texorpdfstring{where \(x\) is an \(m\)-dimensional
+vector.}{where x is an m-dimensional vector.}}\label{where-x-is-an-m-dimensional-vector.}
+
+\subsection{Generate a random sample}\label{generate-a-random-sample}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{S =}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\FloatTok{0.75}\NormalTok{,}\FloatTok{0.75}\NormalTok{,}\DecValTok{2}\NormalTok{),}\DataTypeTok{ncol=}\DecValTok{2}\NormalTok{)}
+\NormalTok{x =}\StringTok{ }\KeywordTok{mvrnorm}\NormalTok{(}\DataTypeTok{n =} \DecValTok{1000}\NormalTok{, }\DataTypeTok{mu=}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{), }\DataTypeTok{Sigma=}\NormalTok{S)}
+
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{)) +}
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Random sample from a  bivariate normal distribution"}\NormalTok{) +}\StringTok{ }\KeywordTok{xlab}\NormalTok{(}\StringTok{"x1"}\NormalTok{) +}\StringTok{ }\KeywordTok{ylab}\NormalTok{(}\StringTok{"x2"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 2 rows containing missing values (geom_point).
+\end{verbatim}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+\subsection{Perform PCA}\label{perform-pca}
+
+In principal component analysis, we compute the covariance of the
+features we are studying, and then compute the eigenvectors of this
+matrix. Let a matrix \(X \in \mathbb{R}^{n \times m}\) be a matrix,
+where we have \(n\) observations for \(m\) features.
+
+\begin{equation}
+X_{c} = X - {\mu_j}
+\end{equation}
+
+\(X_c\) is the centered matrix of \(X\), where we subtract the mean
+(\(\mu_j\)) of each column (feature) from the data and
+\(j \in \{1,..m\}\).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{S.sample =}\StringTok{ }\KeywordTok{cov}\NormalTok{(x)}
+
+\NormalTok{e.decomp =}\StringTok{ }\KeywordTok{eigen}\NormalTok{(S.sample)}
+
+\NormalTok{e.decomp$vectors %*%}\StringTok{ }\KeywordTok{diag}\NormalTok{(e.decomp$values) %*%}\StringTok{ }\KeywordTok{t}\NormalTok{(e.decomp$vectors)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           [,1]      [,2]
+## [1,] 1.0189460 0.7819877
+## [2,] 0.7819877 2.0131314
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x.proj =}\StringTok{ }\NormalTok{x %*%}\StringTok{ }\NormalTok{e.decomp$vectors}
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x.proj[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x.proj[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 5 rows containing missing values (geom_point).
+\end{verbatim}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{e.decomp$values}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.4426486 0.5894288
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{var}\NormalTok{(x.proj[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.442649
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{var}\NormalTok{(x.proj[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.5894288
+\end{verbatim}
+
+Notice that the variance of the projected data matches the eigenvalues
+of the covariance matrix of \(X\). The projection of x onto its
+principal components simply rotates the data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{svd.sample.cov =}\StringTok{ }\KeywordTok{svd}\NormalTok{(S.sample)}
+
+
+\NormalTok{x.center =}\StringTok{ }\KeywordTok{scale}\NormalTok{(x,}\DataTypeTok{scale =} \OtherTok{FALSE}\NormalTok{)}
+
+\NormalTok{svd.x =}\StringTok{ }\KeywordTok{svd}\NormalTok{(x.center)}
+
+
+\NormalTok{x.proj}\FloatTok{.2} \NormalTok{=}\StringTok{ }\NormalTok{x.center %*%}\StringTok{ }\NormalTok{svd.x$v}
+\NormalTok{x.proj}\FloatTok{.3} \NormalTok{=}\StringTok{ }\NormalTok{x.center %*%}\StringTok{ }\NormalTok{svd.sample.cov$v}
+
+\KeywordTok{plot}\NormalTok{(x.proj}\FloatTok{.2}\NormalTok{[,}\DecValTok{1}\NormalTok{],x.proj}\FloatTok{.3}\NormalTok{[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(x.proj}\FloatTok{.2}\NormalTok{[,}\DecValTok{2}\NormalTok{],x.proj}\FloatTok{.3}\NormalTok{[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-3-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{svd.x$d^}\DecValTok{2} \NormalTok{/}\StringTok{ }\NormalTok{(}\DecValTok{1000} \NormalTok{-}\StringTok{ }\DecValTok{1}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.4426486 0.5894288
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{svd.sample.cov$d}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.4426486 0.5894288
+\end{verbatim}
+
+The same eigenvectors and eigenvalues are computed from the matrix
+x.center and the covariance matrix. The singlar values \(\sigma_i\) of x
+and the eigenvalues \(\lambda_i\) of COV\((X)\) are related as follows:
+
+\begin{equation}
+\lambda_i = \frac{\sigma_i^2}{n-1} 
+\end{equation}
+
+\begin{equation}
+\text{COV} \left [ X \right ] = \frac{1}{n-1}X^TX 
+\end{equation}
+
+\begin{equation}
+X = U \Sigma V^T 
+\end{equation}
+
+\begin{equation}
+X^TX = (U \Sigma V^T)^T (U \Sigma V^T)
+\end{equation}
+
+\begin{equation}
+X^TX = V \Sigma U^TU \Sigma V^T
+\end{equation}
+
+\begin{equation}
+X^TX = V \Sigma \Sigma V^T = V \Sigma^2 V^T
+\end{equation}
+
+\begin{equation}
+\frac{1}{n-1}X^TX = \frac{1}{n-1} V \Sigma^2 V^T \rightarrow \frac{1}{n-1} \Sigma^2 = \Lambda
+\end{equation}
+
+where \(\Lambda\) is the diagonal matrix of eigenvalues of
+\(\text{COV} \left [ X \right ]\). Also note that \(V\) is a unitary
+matrix.
+
+This is the same formula as above for the relationship between the
+singular values of X and the eigenvalues of its covariance matrix.
+
+\subsection{What happens if we scale X before running
+PCA?}\label{what-happens-if-we-scale-x-before-running-pca}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x.scaled =}\StringTok{ }\KeywordTok{scale}\NormalTok{(x)}
+
+\NormalTok{cov.scaled.x =}\StringTok{ }\KeywordTok{cov}\NormalTok{(x.scaled)}
+\NormalTok{cov.scaled.x}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           [,1]      [,2]
+## [1,] 1.0000000 0.5459945
+## [2,] 0.5459945 1.0000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{S.sample}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           [,1]      [,2]
+## [1,] 1.0189460 0.7819877
+## [2,] 0.7819877 2.0131314
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{)) +}\StringTok{ }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Before scaling"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 2 rows containing missing values (geom_point).
+\end{verbatim}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x.scaled[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x.scaled[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{)) +}\StringTok{ }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"After scaling"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-4-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{scaled.svd =}\StringTok{ }\KeywordTok{svd}\NormalTok{(cov.scaled.x)}
+
+\NormalTok{x.scaled.proj =}\StringTok{ }\NormalTok{x.scaled %*%}\StringTok{ }\NormalTok{scaled.svd$v }
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x.scaled.proj[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x.scaled.proj[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{5}\NormalTok{,}\DecValTok{5}\NormalTok{)) +}\StringTok{ }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"After projection scaled x"}\NormalTok{) }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{svd.sample.cov$d}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.4426486 0.5894288
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{scaled.svd$d}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.5459945 0.4540055
+\end{verbatim}
+
+It is interesting to note that the angle between the principal axes
+changes.
+
+\begin{equation}
+cos \theta = \frac{v \dot w}{\lVert v \rVert \lVert x \rVert}
+\end{equation}
+
+\subsection{Data reconstruction}\label{data-reconstruction}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x.projection =}\StringTok{ }\NormalTok{svd.sample.cov$v %*%}\StringTok{ }\KeywordTok{t}\NormalTok{(x.center)}
+\NormalTok{x.reconstruction =}\StringTok{ }\KeywordTok{t}\NormalTok{(svd.sample.cov$v %*%}\StringTok{ }\NormalTok{x.projection)}
+\NormalTok{x.reconstruction.partial =}\StringTok{ }\KeywordTok{t}\NormalTok{(svd.sample.cov$v %*%}\StringTok{ }\KeywordTok{rbind}\NormalTok{(x.projection[}\DecValTok{1}\NormalTok{,], }\DecValTok{0}\NormalTok{))}
+
+\KeywordTok{cor}\NormalTok{(x.reconstruction[,}\DecValTok{1}\NormalTok{],x.center[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cor}\NormalTok{(x.reconstruction[,}\DecValTok{2}\NormalTok{],x.center[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cor}\NormalTok{(x.reconstruction[,}\DecValTok{1}\NormalTok{],x.reconstruction.partial[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.7453868
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cor}\NormalTok{(x.reconstruction[,}\DecValTok{2}\NormalTok{],x.reconstruction.partial[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.9654741
+\end{verbatim}
+
+Notince that the reconstruction works perfectly, and the partial
+reconstruction works fairly well.
+
+\subsection{Whitening transform}\label{whitening-transform}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x.proj.white =}\StringTok{ }\NormalTok{x.center %*%}\StringTok{ }\NormalTok{svd.sample.cov$v %*%}\StringTok{ }\KeywordTok{solve}\NormalTok{(}\KeywordTok{diag}\NormalTok{(}\KeywordTok{sqrt}\NormalTok{(svd.sample.cov$d)))}
+\KeywordTok{var}\NormalTok{(x.proj.white[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{var}\NormalTok{(x.proj.white[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x.proj.white[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x.proj.white[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{4}\NormalTok{,}\DecValTok{4}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{4}\NormalTok{,}\DecValTok{4}\NormalTok{)) +}\StringTok{ }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Whitening Transfrom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{w_sqrt =}\StringTok{ }\NormalTok{svd.sample.cov$v %*%}\StringTok{ }\KeywordTok{diag}\NormalTok{(}\KeywordTok{sqrt}\NormalTok{(svd.sample.cov$d)) %*%}\StringTok{ }\KeywordTok{t}\NormalTok{(svd.sample.cov$v)}
+\NormalTok{w_inv_sqrt =}\StringTok{ }\KeywordTok{solve}\NormalTok{(w_sqrt)}
+\NormalTok{w_inv_sqrt}\FloatTok{.2} \NormalTok{=}\StringTok{ }\KeywordTok{t}\NormalTok{(svd.sample.cov$v) %*%}\StringTok{ }\KeywordTok{solve}\NormalTok{(}\KeywordTok{diag}\NormalTok{(}\KeywordTok{sqrt}\NormalTok{(svd.sample.cov$d))) %*%}\StringTok{ }\NormalTok{svd.sample.cov$v}
+\NormalTok{x.proj.white}\FloatTok{.2}\NormalTok{=}\StringTok{ }\NormalTok{x.center %*%}\StringTok{ }\NormalTok{w_inv_sqrt}\FloatTok{.2}
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{x.proj.white}\FloatTok{.2}\NormalTok{[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{y=}\NormalTok{x.proj.white}\FloatTok{.2}\NormalTok{[,}\DecValTok{2}\NormalTok{])) +}\StringTok{ }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{4}\NormalTok{,}\DecValTok{4}\NormalTok{))  +}\StringTok{ }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits=}\KeywordTok{c}\NormalTok{(-}\DecValTok{4}\NormalTok{,}\DecValTok{4}\NormalTok{)) +}\StringTok{ }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Whitening Transfrom 2"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 1 rows containing missing values (geom_point).
+\end{verbatim}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-8-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cov}\NormalTok{(x.proj.white}\FloatTok{.2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##               [,1]          [,2]
+## [1,]  1.000000e+00 -7.409104e-17
+## [2,] -7.409104e-17  1.000000e+00
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cov}\NormalTok{(x.proj.white)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##              [,1]         [,2]
+## [1,] 1.000000e+00 2.528297e-17
+## [2,] 2.528297e-17 1.000000e+00
+\end{verbatim}
+
+The above are two different whitening transforms. Please note that:
+
+\begin{equation}
+\text{COV}[X] = V \Lambda V^T
+\end{equation}
+
+In a diagonal matrix \(\Lambda\) we can take the square roots by just
+taking the square root of the diagonal elements
+
+\begin{equation}
+\text{COV}[X] = (V \Lambda^{1/2} V^T)^2 = V \Lambda^{1/2} (V^T V) \Lambda^{1/2} V^T = V \Lambda V^T
+\end{equation}
+
+Since, \(V^T V = I\). That is \(V^T = V^{-1}\).
+
+\begin{equation}
+\text{COV}[X]^{1/2} = V \Lambda^{1/2} V^T 
+\end{equation}
+
+Now \((ABC)^-1 = C^{-1}B^{-1}A^{-1}\). Therefore
+
+\begin{equation}
+\text{COV}[X]^{-1/2} = (V \Lambda^{1/2} V^T )^{-1} = V^{-1} \Lambda^{-1/2} (V^{-1})^-1 = V^{T} \Lambda^{-1/2} V
+\end{equation}
+
+Since \(V^T = V^{-1}\).
+
+\section{\texorpdfstring{Mahalanobis
+distance\(^2\)}{Mahalanobis distance\^{}2}}\label{mahalanobis-distance2}
+
+The Mahalanobis of a centered vector from the origin is:
+
+\begin{equation}
+D_{M}(x)^2 = x^T S^{-1} x
+\end{equation}
+
+where \(S\) is the covariance matrix of the vector \(x\).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{t}\NormalTok{(x.center[}\DecValTok{1}\NormalTok{,]) %*%}\StringTok{ }\KeywordTok{solve}\NormalTok{(S.sample) %*%}\StringTok{ }\NormalTok{x.center[}\DecValTok{1}\NormalTok{,]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           [,1]
+## [1,] 0.8426972
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{sum}\NormalTok{(x.proj.white[}\DecValTok{1}\NormalTok{,]^}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.8426972
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{sum}\NormalTok{(x.proj.white}\FloatTok{.2}\NormalTok{[}\DecValTok{1}\NormalTok{,]^}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.8426972
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{x}\FloatTok{.1}\NormalTok{.proj.scaled =}\StringTok{ }\NormalTok{x.center[}\DecValTok{1}\NormalTok{,] %*%}\StringTok{ }\NormalTok{svd.sample.cov$v %*%}\StringTok{ }\KeywordTok{solve}\NormalTok{(}\KeywordTok{diag}\NormalTok{(}\KeywordTok{sqrt}\NormalTok{(svd.sample.cov$d)))}
+\KeywordTok{sum}\NormalTok{(x}\FloatTok{.1}\NormalTok{.proj.scaled^}\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.8426972
+\end{verbatim}
+
+Mahalanobis distance\(^2\) is the equal to the \(\lVert x \rVert^2\) in
+the Whitened space.
+
+The norm of a vector
+
+\begin{equation}
+\lVert x \rVert^2 = \sum{x_i^2} = x^Tx
+\end{equation}\begin{equation}
+(x^T)^T = x
+\end{equation}
+
+\begin{equation}
+D_{M}(x)^2 = x^T \text{COV}[X]^{-1} x
+\end{equation}
+
+\begin{equation}
+\text{COV}[X]^{-1} = (V \Lambda V^T )^{-1} = V^T \Lambda^{-1} V
+\end{equation}
+
+The Mahalanobis distance\(^2\) can be written as
+
+\begin{equation}
+D_{M}(x)^2 = x^T V^T \Lambda^{-1} V x =  x^T V^T \Lambda^{-1/2}  \Lambda^{-1/2} V x = (x^T V^T \Lambda^{-1/2})  (\Lambda^{-1/2} V x) = (\Lambda^{-1/2} V x)^T (\Lambda^{-1/2} V x)
+\end{equation}\begin{equation}
+= (\Lambda^{-1/2} V x)^T (\Lambda^{-1/2} V x) = \lVert \Lambda^{-1/2} V x \rVert^2 = \lVert x^T V^T \Lambda^{-1/2} \rVert^2 = D_{M}(x)^2 
+\end{equation}
+
+The final equality \(\lVert x^T V^T \Lambda^{-1/2} \rVert^2\) shows that
+the \(D_{M}(x)^2\) is the same as projecting the \(x\) onto its
+principal components, then scaling each axis by the square root of its
+eigenvalue (if the eigenvalue is the variance then the sqrt(eigenvalue)
+is like the standard deviation) and finally taking the norm of the
+scaled projected x. A eigenvalue is the variance of the data projected
+onto its corresponding eigenvector, so to scale it you divide by the
+standard deviation.
+
+\section{What about PCA and SVD in the case where there are more
+variables than
+observations?}\label{what-about-pca-and-svd-in-the-case-where-there-are-more-variables-than-observations}
+
+Generate random samples. Assume we have \(n=100\) subjects and \(m=200\)
+snps.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{n =}\StringTok{ }\DecValTok{100}
+\NormalTok{m =}\StringTok{ }\DecValTok{1000}
+\NormalTok{z =}\StringTok{ }\KeywordTok{rbinom}\NormalTok{(n,}\DataTypeTok{size =} \DecValTok{2}\NormalTok{, }\DataTypeTok{prob =} \FloatTok{0.5}\NormalTok{)}
+\NormalTok{X =}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}\KeywordTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{,n *}\StringTok{ }\NormalTok{m),}\DataTypeTok{ncol=}\NormalTok{n)}
+\NormalTok{snp_afs_0 =}\StringTok{ }\KeywordTok{runif}\NormalTok{(m,}\FloatTok{0.01}\NormalTok{,}\FloatTok{0.5}\NormalTok{)}
+\NormalTok{snp_afs_1 =}\StringTok{ }\KeywordTok{runif}\NormalTok{(m,}\FloatTok{0.25}\NormalTok{,}\FloatTok{0.75}\NormalTok{)}
+\NormalTok{snp_afs_2 =}\StringTok{ }\KeywordTok{c}\NormalTok{(snp_afs_0[}\DecValTok{1}\NormalTok{:(m/}\DecValTok{2}\NormalTok{)],snp_afs_1[(m/}\DecValTok{2} \NormalTok{+}\StringTok{ }\DecValTok{1}\NormalTok{):m])}
+\NormalTok{for(i in }\DecValTok{1}\NormalTok{:n) \{}
+  \NormalTok{x_i =}\StringTok{ }\OtherTok{NULL}
+  \NormalTok{if(z[i] ==}\StringTok{ }\DecValTok{0}\NormalTok{) \{}
+    \NormalTok{x_i =}\StringTok{ }\KeywordTok{rbinom}\NormalTok{(m,}\DataTypeTok{size=}\DecValTok{2}\NormalTok{,}\DataTypeTok{prob=}\NormalTok{snp_afs_0)}
+  \NormalTok{\} else if(z[i] ==}\StringTok{ }\DecValTok{1}\NormalTok{) \{}
+    \NormalTok{x_i =}\StringTok{ }\KeywordTok{rbinom}\NormalTok{(m,}\DataTypeTok{size=}\DecValTok{2}\NormalTok{,}\DataTypeTok{prob=}\NormalTok{snp_afs_1)}
+  \NormalTok{\} else \{}
+    \NormalTok{x_i =}\StringTok{ }\KeywordTok{rbinom}\NormalTok{(m,}\DataTypeTok{size=}\DecValTok{2}\NormalTok{,}\DataTypeTok{prob=}\NormalTok{snp_afs_2)}
+  \NormalTok{\}}
+  \NormalTok{X[,i] =}\StringTok{ }\NormalTok{x_i}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+Standardize by subtracting off the row means and dividing by the
+standard deviation. Also compute covariance matrix.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{X_std =}\StringTok{ }\KeywordTok{t}\NormalTok{(}\KeywordTok{scale}\NormalTok{(}\KeywordTok{t}\NormalTok{(X)))}
+\NormalTok{ind_cov =}\StringTok{ }\KeywordTok{cov}\NormalTok{(X_std)}
+\NormalTok{ind_cor_x =}\StringTok{ }\KeywordTok{cor}\NormalTok{(X)}
+
+\CommentTok{#approx covariance matrix}
+\NormalTok{Xt_X =}\StringTok{ }\KeywordTok{t}\NormalTok{(X_std) %*%}\StringTok{ }\NormalTok{X_std *}\StringTok{ }\DecValTok{1}\NormalTok{/(n}\DecValTok{-1}\NormalTok{)}
+
+\KeywordTok{dim}\NormalTok{(ind_cov)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 100 100
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{dim}\NormalTok{(Xt_X)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 100 100
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{sign}\NormalTok{(Xt_X[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{,}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{]) ==}\StringTok{ }\KeywordTok{sign}\NormalTok{(ind_cov[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{,}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        [,1]  [,2] [,3]  [,4] [,5] [,6]  [,7] [,8]  [,9] [,10]
+##  [1,]  TRUE  TRUE TRUE  TRUE TRUE TRUE FALSE TRUE  TRUE  TRUE
+##  [2,]  TRUE  TRUE TRUE FALSE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+##  [3,]  TRUE  TRUE TRUE  TRUE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+##  [4,]  TRUE FALSE TRUE  TRUE TRUE TRUE  TRUE TRUE  TRUE FALSE
+##  [5,]  TRUE  TRUE TRUE  TRUE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+##  [6,]  TRUE  TRUE TRUE  TRUE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+##  [7,] FALSE  TRUE TRUE  TRUE TRUE TRUE  TRUE TRUE FALSE  TRUE
+##  [8,]  TRUE  TRUE TRUE  TRUE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+##  [9,]  TRUE  TRUE TRUE  TRUE TRUE TRUE FALSE TRUE  TRUE  TRUE
+## [10,]  TRUE  TRUE TRUE FALSE TRUE TRUE  TRUE TRUE  TRUE  TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Xt_X[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{,}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{] /}\StringTok{ }\NormalTok{ind_cov[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{,}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##             [,1]      [,2]     [,3]      [,4]     [,5]      [,6]
+##  [1,] 12.0682391 22.302392 21.69088 29.520355 28.13376  3.064514
+##  [2,] 22.3023915 10.602309 28.02168 -2.653946 18.17600 12.229005
+##  [3,] 21.6908815 28.021677 10.73762 31.328131 42.30572 11.904250
+##  [4,] 29.5203547 -2.653946 31.32813 10.641677 39.52809 12.815637
+##  [5,] 28.1337611 18.175999 42.30572 39.528093 10.94542 11.834780
+##  [6,]  3.0645136 12.229005 11.90425 12.815637 11.83478 10.120649
+##  [7,] -0.2461114 13.374454 13.15835 13.502245 13.23654 11.177398
+##  [8,] 24.7062758 21.994024 34.79571 33.348623 37.75772  5.875213
+##  [9,] 24.6949329 33.689256 22.20866 32.926927 24.36417 25.106769
+## [10,] 21.8135544 17.811780 28.41561 -8.151546 16.96303 11.981163
+##             [,7]      [,8]      [,9]     [,10]
+##  [1,] -0.2461114 24.706276 24.694933 21.813554
+##  [2,] 13.3744537 21.994024 33.689256 17.811780
+##  [3,] 13.1583452 34.795706 22.208662 28.415606
+##  [4,] 13.5022451 33.348623 32.926927 -8.151546
+##  [5,] 13.2365382 37.757724 24.364171 16.963035
+##  [6,] 11.1773980  5.875213 25.106769 11.981163
+##  [7,] 10.1506282  4.428662 -1.355092 13.569101
+##  [8,]  4.4286620 12.253188 27.224969 19.554674
+##  [9,] -1.3550917 27.224969 12.080157 20.987998
+## [10,] 13.5691010 19.554674 20.987998 10.645161
+\end{verbatim}
+
+Now let us compare the eigenvalues of each
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{eigen.XT_X =}\StringTok{ }\KeywordTok{eigen}\NormalTok{(Xt_X)}
+\NormalTok{eigen.ind_cov =}\StringTok{ }\KeywordTok{eigen}\NormalTok{(ind_cov)}
+\NormalTok{eigen.ind_cor =}\StringTok{ }\KeywordTok{eigen}\NormalTok{(}\KeywordTok{cor}\NormalTok{(X_std))}
+\NormalTok{eigen.ind_cor_x =}\StringTok{ }\KeywordTok{eigen}\NormalTok{(ind_cor_x)}
+\NormalTok{svd.X =}\StringTok{ }\KeywordTok{svd}\NormalTok{(X_std)}
+
+\NormalTok{color =}\StringTok{ }\NormalTok{function(x) \{}
+  \NormalTok{a_func =}\StringTok{ }\NormalTok{function(a) \{}
+    \NormalTok{if(a ==}\StringTok{ }\DecValTok{0}\NormalTok{) \{}
+      \KeywordTok{return}\NormalTok{(}\StringTok{"black"}\NormalTok{)}
+    \NormalTok{\} else if(a ==}\StringTok{ }\DecValTok{1}\NormalTok{) \{}
+      \KeywordTok{return}\NormalTok{(}\StringTok{"red"}\NormalTok{)}
+    \NormalTok{\} else \{}
+      \KeywordTok{return}\NormalTok{(}\StringTok{"blue"}\NormalTok{)}
+    \NormalTok{\}}
+  \NormalTok{\}}
+  \KeywordTok{sapply}\NormalTok{(x,}\DataTypeTok{FUN=}\NormalTok{a_func)}
+\NormalTok{\}}
+
+\NormalTok{(svd.X$d^}\DecValTok{2} \NormalTok{/}\StringTok{ }\NormalTok{(n -}\StringTok{ }\DecValTok{1}\NormalTok{))[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] 139.46563  36.75533  14.51172  14.30498  14.09950  13.86599  13.57933
+##  [8]  13.46745  13.27360  13.05524
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{eigen.XT_X$values[}\DecValTok{1}\NormalTok{:}\DecValTok{10}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] 139.46563  36.75533  14.51172  14.30498  14.09950  13.86599  13.57933
+##  [8]  13.46745  13.27360  13.05524
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(svd.X$d^}\DecValTok{2} \NormalTok{/}\StringTok{ }\NormalTok{(n -}\StringTok{ }\DecValTok{1}\NormalTok{),eigen.XT_X$values,}\DataTypeTok{main=}\StringTok{"singluar values^2 / (n-1) = eigenvalues"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(svd.X$v[,}\DecValTok{1}\NormalTok{],svd.X$v[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{col=}\KeywordTok{color}\NormalTok{(z))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.XT_X$vectors[,}\DecValTok{1}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{col=}\KeywordTok{color}\NormalTok{(z))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$vectors[,}\DecValTok{1}\NormalTok{],eigen.ind_cov$vectors[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{col=}\KeywordTok{color}\NormalTok{(z))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-4.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor$vectors[,}\DecValTok{1}\NormalTok{],eigen.ind_cor$vectors[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{col=}\KeywordTok{color}\NormalTok{(z))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-5.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor_x$vectors[,}\DecValTok{1}\NormalTok{],eigen.ind_cor_x$vectors[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{col=}\KeywordTok{color}\NormalTok{(z))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-6.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$vectors[,}\DecValTok{1}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-7.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$vectors[,}\DecValTok{2}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-8.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$vectors[,}\DecValTok{3}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{3}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-9.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor$vectors[,}\DecValTok{1}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-10.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor$vectors[,}\DecValTok{2}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-11.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor$vectors[,}\DecValTok{3}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{3}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-12.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$values,eigen.XT_X$values)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-13.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cov$values,eigen.ind_cor$values)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-14.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor$values,eigen.ind_cor_x$values)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-15.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor_x$vectors[,}\DecValTok{1}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{1}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-16.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(eigen.ind_cor_x$vectors[,}\DecValTok{2}\NormalTok{],eigen.XT_X$vectors[,}\DecValTok{2}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-12-17.pdf}
+The eigenvalues from svd match those from the eigenvalues from the
+matrix Xt\_X
+
+Now let us see how
+
+Higher varying genes have higher weights assigned to them
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{((svd.X$u[,}\DecValTok{1}\NormalTok{])^}\DecValTok{2}\NormalTok{,}\KeywordTok{apply}\NormalTok{(X,}\DataTypeTok{MARGIN=}\DecValTok{1}\NormalTok{,}\DataTypeTok{FUN=}\NormalTok{var))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cor}\NormalTok{((svd.X$u[,}\DecValTok{1}\NormalTok{])^}\DecValTok{2}\NormalTok{,}\KeywordTok{apply}\NormalTok{(X,}\DataTypeTok{MARGIN=}\DecValTok{1}\NormalTok{,}\DataTypeTok{FUN=}\NormalTok{var))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.5794214
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{best_snps_for_comp_1 =}\StringTok{ }\KeywordTok{sort}\NormalTok{(svd.X$u[,}\DecValTok{1}\NormalTok{],}\DataTypeTok{decreasing=}\NormalTok{T,}\DataTypeTok{index.return=}\NormalTok{T)$ix}
+\NormalTok{best_snps_for_comp_2 =}\StringTok{ }\KeywordTok{sort}\NormalTok{(svd.X$u[,}\DecValTok{2}\NormalTok{],}\DataTypeTok{decreasing=}\NormalTok{T,}\DataTypeTok{index.return=}\NormalTok{T)$ix}
+
+\NormalTok{genes_ranked_by_var =}\StringTok{ }\KeywordTok{sort}\NormalTok{(}\KeywordTok{apply}\NormalTok{(X,}\DataTypeTok{MARGIN=}\DecValTok{1}\NormalTok{,}\DataTypeTok{FUN=}\NormalTok{var),}\DataTypeTok{index.return=}\NormalTok{T,}\DataTypeTok{decreasing=}\NormalTok{T)}
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_jitter}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_1[}\DecValTok{1}\NormalTok{],],}\DataTypeTok{y=}\NormalTok{X[best_snps_for_comp_2[}\DecValTok{1}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)),}\DataTypeTok{width =} \FloatTok{0.25}\NormalTok{,}\DataTypeTok{height=}\FloatTok{0.25}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_jitter}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_2[}\DecValTok{1}\NormalTok{],],}\DataTypeTok{y=}\NormalTok{X[best_snps_for_comp_2[}\DecValTok{2}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)),}\DataTypeTok{width =} \FloatTok{0.25}\NormalTok{,}\DataTypeTok{height=}\FloatTok{0.25}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_density}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_1[}\DecValTok{1}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-4.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_density}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_1[}\DecValTok{2}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-5.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_density}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_2[}\DecValTok{1}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-6.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{()) +}\StringTok{ }\KeywordTok{geom_density}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{X[best_snps_for_comp_2[}\DecValTok{2}\NormalTok{],],}\DataTypeTok{color=}\KeywordTok{color}\NormalTok{(z)))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{PCA_SVD_AND_Mahalanobis_Distance_files/figure-latex/unnamed-chunk-13-7.pdf}
+
+
+\end{document}
